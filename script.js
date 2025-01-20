@@ -1,6 +1,16 @@
 const canvas = document.getElementById("canvas");
 const gl = canvas.getContext("webgl");
 
+const panSpan = document.getElementById("pan");
+const zoomSpan = document.getElementById("zoom");
+
+function updatePanSpan(pan) {
+    panSpan.innerText = `x = ${pan.x.toString()}, y = ${pan.y.toString()}`;
+}
+function updateZoomSpan(zoom) {
+    zoomSpan.innerText = `${zoom}`;
+}
+
 function sizeCanvas(canvas) {
     // Lookup the size the browser is displaying the canvas in CSS pixels.
     const displayWidth = canvas.clientWidth;
@@ -110,6 +120,8 @@ function update() {
 }
 
 update();
+updatePanSpan(translate);
+updateZoomSpan(scale.x);
 
 document.addEventListener("wheel", (e) => {
     e.preventDefault();
@@ -124,6 +136,9 @@ document.addEventListener("wheel", (e) => {
     translate.y -= (theCoordsNowAtTheMouseY * scale.x + canvas.height/2 - (canvas.height - e.clientY)) / scale.x;
     // i hate this so much and no clue how it works but i dont want to think so pls dont touch it
     // "the translate cancels out" just in case you know/remember what that means
+
+    updatePanSpan(translate);
+    updateZoomSpan(scale.x);
 }, {passive: false});
 
 let pMouse = null;
@@ -136,6 +151,7 @@ document.addEventListener("mousemove", (e) => {
         translate.y -= (e.clientY - pMouse.y) / scale.y;
         pMouse = {x: e.clientX, y: e.clientY};
     }
+    updatePanSpan(translate);
 });
 document.addEventListener("mouseup", (e) => {
     pMouse = null;

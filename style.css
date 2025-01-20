@@ -7,3 +7,20 @@ body {
     width: 100vw;
     height: 100vh;
 }
+
+#header{
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% - 20px);
+    padding: 10px;
+    display: flex;
+}
+
+.data{
+    font-family: 'Courier New', Courier, monospace;
+    color: white;
+    flex-grow: 1;
+}
