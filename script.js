@@ -4,11 +4,20 @@ const gl = canvas.getContext("webgl");
 const panSpan = document.getElementById("pan");
 const zoomSpan = document.getElementById("zoom");
 
+function prettyDecimal(decimal, places, signed = true) {
+    let zeroes = new Array(places+1);
+    zeroes.fill("0");
+    if(decimal == 0) return "0."+zeroes.join("").toString().slice(0, -2);
+
+    let final = (decimal > 0 ? "+" : "") + (decimal.toString() + zeroes.join("")).slice(0, (decimal > 0 ? places-1 : places) + (signed ? 0 : 1));
+    if(!signed) return final.slice(1, final.length);
+    return final;
+}
 function updatePanSpan(pan) {
-    panSpan.innerText = `x = ${pan.x.toString()}, y = ${pan.y.toString()}`;
+    panSpan.innerText = `x = ${prettyDecimal(pan.x, 7)}, y = ${prettyDecimal(pan.y, 7)}`;
 }
 function updateZoomSpan(zoom) {
-    zoomSpan.innerText = `${zoom}`;
+    zoomSpan.innerText = `${prettyDecimal(zoom, 7, false)}`;
 }
 
 function sizeCanvas(canvas) {
@@ -81,14 +90,23 @@ gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
 const translateUniformLocation = gl.getUniformLocation(program, "u_translate");
 const scaleUniformLocation = gl.getUniformLocation(program, "u_scale");
+const showJuliaUniformLocation = gl.getUniformLocation(program, "show_julia");
+const cJuliaUniformLocation = gl.getUniformLocation(program, "c_julia");
+const jTranslateUniformLocation = gl.getUniformLocation(program, "u_julia_translate");
+const jScaleUniformLocation = gl.getUniformLocation(program, "u_julia_scale");
 
+let showJuliaSet = false;
 let scale = {x: 1, y: 1};
 let translate = {x: 0, y: 0};
 let scrollSpeed = 0.100;
+let jScale = {x: 1, y: 1};
+let jTranslate = {x: 0, y: 0};
 
 sizeCanvas(canvas);
 scale.x = Math.min(canvas.width, canvas.height)/2;
 scale.y = scale.x;
+jScale.x = scale.x;
+jScale.y = scale.x;
 
 function update() {
     // resize canvas and viewport properly
@@ -112,6 +130,11 @@ function update() {
     gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
     gl.uniform2f(translateUniformLocation, translate.x, translate.y);
     gl.uniform2f(scaleUniformLocation, scale.x, scale.y);
+    gl.uniform1i(showJuliaUniformLocation, showJuliaSet);
+    gl.uniform2f(cJuliaUniformLocation, -translate.x, -translate.y);
+    gl.uniform2f(jTranslateUniformLocation, jTranslate.x, jTranslate.y);
+    gl.uniform2f(jScaleUniformLocation, jScale.x, jScale.y);
+
 
     // now actually draw the stuff
     gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -123,17 +146,29 @@ update();
 updatePanSpan(translate);
 updateZoomSpan(scale.x);
 
-document.addEventListener("wheel", (e) => {
+// the part that shows the mandelbrot
+canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
+
+    if(showJuliaSet && e.clientX >= canvas.width/2) return; // showing juliaset panel and hovered on that side
+
     let pScaleX = scale.x;
     scale.x -= Math.sign(e.deltaY) * scrollSpeed * scale.x;
-    scale.x = Math.max(scale.x, Math.min(canvas.width, canvas.height)/2);
+    scale.x = Math.max(scale.x, Math.min(canvas.width, canvas.height)/10);
     scale.y = scale.x;
 
-    let theCoordsNowAtTheMouse = (e.clientX - canvas.width/2) / pScaleX;
-    translate.x -= (theCoordsNowAtTheMouse * scale.x + canvas.width/2 - e.clientX) / scale.x;
-    let theCoordsNowAtTheMouseY = (canvas.height/2 - e.clientY) / pScaleX;
-    translate.y -= (theCoordsNowAtTheMouseY * scale.x + canvas.height/2 - (canvas.height - e.clientY)) / scale.x;
+    let mouseX, mouseY
+    if(showJuliaSet) {
+        mouseX = e.clientX  - canvas.width/4;
+    } else {
+        mouseX = e.clientX - canvas.width/2;
+    }
+    mouseY = canvas.height/2 - e.clientY;
+
+    let theCoordsNowAtTheMouse = (mouseX) / pScaleX;
+    translate.x -= (theCoordsNowAtTheMouse * scale.x - mouseX) / scale.x;
+    let theCoordsNowAtTheMouseY = mouseY / pScaleX;
+    translate.y -= (theCoordsNowAtTheMouseY * scale.x - mouseY) / scale.x;
     // i hate this so much and no clue how it works but i dont want to think so pls dont touch it
     // "the translate cancels out" just in case you know/remember what that means
 
@@ -141,18 +176,71 @@ document.addEventListener("wheel", (e) => {
     updateZoomSpan(scale.x);
 }, {passive: false});
 
+// julia set panel on right
+canvas.addEventListener("wheel", (e) => {
+    if(!showJuliaSet) return; // not showing julia set
+    if(e.clientX < canvas.width/2) return; // not on the correct side of canvas
+
+    let pScaleX = jScale.x;
+    jScale.x -= Math.sign(e.deltaY) * scrollSpeed * jScale.x;
+    jScale.x = Math.max(jScale.x, Math.min(canvas.width, canvas.height)/10);
+    jScale.y = jScale.x;
+
+    let mouseX, mouseY
+    mouseX = e.clientX - 0.75*canvas.width; // wrt 3/4 mark, center of juliaset panel
+    mouseY = canvas.height/2 - e.clientY;
+
+    let theCoordsNowAtTheMouse = (mouseX) / pScaleX;
+    jTranslate.x -= (theCoordsNowAtTheMouse * jScale.x - mouseX) / jScale.x;
+    let theCoordsNowAtTheMouseY = mouseY / pScaleX;
+    jTranslate.y -= (theCoordsNowAtTheMouseY * jScale.x - mouseY) / jScale.x;
+
+}, {passive: false});
+
 let pMouse = null;
-document.addEventListener("mousedown", (e) => {
+let mouseInJuliaHalf = false;
+canvas.addEventListener("mousedown", (e) => {
     pMouse = {x: e.clientX, y: e.clientY};
+    if(showJuliaSet && e.clientX >= canvas.width/2) mouseInJuliaHalf = true;
 });
-document.addEventListener("mousemove", (e) => {
+canvas.addEventListener("mousemove", (e) => {
     if(pMouse !== null) {
-        translate.x += (e.clientX - pMouse.x) / scale.x;
-        translate.y -= (e.clientY - pMouse.y) / scale.y;
+        console.log("ok")
+        if(mouseInJuliaHalf) {
+            jTranslate.x += (e.clientX - pMouse.x)*2 / (jScale.x); // scale halved, so distances are doubled
+            jTranslate.y -= (e.clientY - pMouse.y)*2 / (jScale.y);
+        } else {
+            translate.x += (e.clientX - pMouse.x)*(showJuliaSet?2:1) / (scale.x);
+            translate.y -= (e.clientY - pMouse.y)*(showJuliaSet?2:1) / (scale.y);
+            updatePanSpan(translate);
+        }
         pMouse = {x: e.clientX, y: e.clientY};
     }
-    updatePanSpan(translate);
 });
-document.addEventListener("mouseup", (e) => {
+canvas.addEventListener("mouseup", (e) => {
     pMouse = null;
+    mouseInJuliaHalf = false;
+});
+
+document.getElementById("recenter-j").style.display = showJuliaSet ? "inline-block" : "none";
+document.getElementById("julia").addEventListener("click", (e) => {
+    showJuliaSet = !showJuliaSet;
+    document.getElementById("recenter-j").style.display = showJuliaSet ? "inline-block" : "none";
+    if(!showJuliaSet) {
+        jTranslate = {x: 0, y: 0};
+        jScale.x = Math.min(canvas.width, canvas.height)/2;
+        jScale.y = jScale.x;
+    }
+    e.target.innerText = showJuliaSet ? "hide julia set" : "show julia set";
+});
+
+document.getElementById("recenter-m").addEventListener("click", (e) => {
+    translate = {x: 0, y: 0};
+    scale.x = Math.min(canvas.width, canvas.height)/2;
+    scale.y = scale.x;
+});
+document.getElementById("recenter-j").addEventListener("click", (e) => {
+    jTranslate = {x: 0, y: 0};
+    jScale.x = Math.min(canvas.width, canvas.height)/2;
+    jScale.y = jScale.x;
 });
