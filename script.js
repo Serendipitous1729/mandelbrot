@@ -94,6 +94,7 @@ const showJuliaUniformLocation = gl.getUniformLocation(program, "show_julia");
 const cJuliaUniformLocation = gl.getUniformLocation(program, "c_julia");
 const jTranslateUniformLocation = gl.getUniformLocation(program, "u_julia_translate");
 const jScaleUniformLocation = gl.getUniformLocation(program, "u_julia_scale");
+const paletteUniformLocation = gl.getUniformLocation(program, "palette");
 
 let showJuliaSet = false;
 let scale = {x: 1, y: 1};
@@ -101,6 +102,7 @@ let translate = {x: 0, y: 0};
 let scrollSpeed = 0.100;
 let jScale = {x: 1, y: 1};
 let jTranslate = {x: 0, y: 0};
+let palette = 0;
 
 sizeCanvas(canvas);
 scale.x = Math.min(canvas.width, canvas.height)/2;
@@ -134,6 +136,7 @@ function update() {
     gl.uniform2f(cJuliaUniformLocation, -translate.x, -translate.y);
     gl.uniform2f(jTranslateUniformLocation, jTranslate.x, jTranslate.y);
     gl.uniform2f(jScaleUniformLocation, jScale.x, jScale.y);
+    gl.uniform1i(paletteUniformLocation, palette);
 
 
     // now actually draw the stuff
@@ -234,13 +237,17 @@ document.getElementById("julia").addEventListener("click", (e) => {
     e.target.innerText = showJuliaSet ? "hide julia set" : "show julia set";
 });
 
-document.getElementById("recenter-m").addEventListener("click", (e) => {
+document.getElementById("recenter-m").addEventListener("click", () => {
     translate = {x: 0, y: 0};
     scale.x = Math.min(canvas.width, canvas.height)/2;
     scale.y = scale.x;
 });
-document.getElementById("recenter-j").addEventListener("click", (e) => {
+document.getElementById("recenter-j").addEventListener("click", () => {
     jTranslate = {x: 0, y: 0};
     jScale.x = Math.min(canvas.width, canvas.height)/2;
     jScale.y = jScale.x;
+});
+
+document.getElementById("color").addEventListener("click", () => {
+    palette = (palette + 1) % 4;
 });

@@ -12,12 +12,53 @@ uniform bool show_julia;
 uniform vec2 c_julia;
 uniform vec2 u_julia_scale;
 uniform vec2 u_julia_translate;
+uniform int palette;
 
+vec4 HSVCircle(float t) {
+    // Normalize t to a range suitable for color generation
+    float normalizedT = t * 360.0;
+    
+    // Generate color using HSV to RGB conversion
+    float hue = mod(normalizedT, 360.0);
+    float saturation = 1.0;
+    float value = 1.0;
+    
+    float c = value * saturation;
+    float x = c * (1.0 - abs(mod(hue / 60.0, 2.0) - 1.0));
+    float m = value - c;
+    
+    vec3 rgb;
+    if (hue < 60.0) {
+        rgb = vec3(c, x, 0.0);
+    } else if (hue < 120.0) {
+        rgb = vec3(x, c, 0.0);
+    } else if (hue < 180.0) {
+        rgb = vec3(0.0, c, x);
+    } else if (hue < 240.0) {
+        rgb = vec3(0.0, x, c);
+    } else if (hue < 300.0) {
+        rgb = vec3(x, 0.0, c);
+    } else {
+        rgb = vec3(c, 0.0, x);
+    }
+    
+    rgb += vec3(m);
+    
+    return vec4(rgb, 1.0);
+}
 
 vec4 getColor(int i, int maxIterations) {
     // Normalize the iteration count to a value between 0 and 1
     float t = sin(3.14159265358979323 * float(i) / float(maxIterations));
-    return vec4(0., 0., t, 1.);
+    if(palette == 0){
+        return vec4(0., t - 0.5, t * 2., 1.); // blue
+    } else if (palette == 1){
+        return HSVCircle(t); // rainbow
+    } else if (palette == 2){
+        return vec4(t, t, t, 1.);
+    } else if (palette == 3){
+        return vec4(0., 0., t, 1.);
+    }
 }
 
 

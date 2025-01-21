@@ -35,7 +35,7 @@ body {
 }
 
 #buttons-container {
-    flex-basis: 40%;
+    flex-basis: 50%;
     flex-grow: 1;
     flex-shrink: 0;
     display: flex;
