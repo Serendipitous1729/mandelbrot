@@ -90,7 +90,7 @@ void main() {
     vec4 finalColor;
     const int max_iterations = 500;
 
-    if(show_julia && v_coords.x <= 1./u_resolution.x && v_coords.x >= -1./u_resolution.x ){
+    if(show_julia && v_coords.x <= 2./u_resolution.x && v_coords.x >= -2./u_resolution.x ){
         // border
         gl_FragColor = vec4(1., 1., 1., 1.);
     } else if(show_julia && v_coords.x > 0.) {
