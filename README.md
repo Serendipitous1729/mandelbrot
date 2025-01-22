@@ -1,5 +1,6 @@
 # mandelbrot
 a fast and simple mandelbrot set explorer, made using WebGL!
+[Demo link: https://minimal-mandelbrot.vercel.app/](https://minimal-mandelbrot.vercel.app/)
 
 ## controls
 zoom - `scroll (mouse / touchpad)`
@@ -34,4 +35,6 @@ i wanted an excuse to learn basic WebGL, and mandelbrots are cool! **:<zero-widt
 I'm pretty sure this is because you've hit the limit of floating-point number precision. I'd love to know how to get around this, and make it possible to zoom in further!
 
 ## screenshots
-[to be added]
+![what the page looks like immediately on load](screenshots/ss_1.jpeg)
+![zoom in and find the entire fractal again!](screenshots/ss_2.jpeg)
+![seeing julia sets as well](screenshots/ss_3.jpeg)
